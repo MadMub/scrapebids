@@ -15,7 +15,6 @@
     <script type="text/javascript" src="http://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="http://cdn.jsdelivr.net/pouchdb/2.2.3/pouchdb.min.js"></script>
     <script type="text/javascript">
-    var DEBUB = true;
     var docs = [];
     var table;
     var db = new PouchDB('QuibidsDB');
@@ -55,10 +54,6 @@
         };
         // check that data isn't void
         if (auction.name.length) {
-            if (DEBUG) {
-                console.log("Inserting");
-                console.log(auction);
-            }
             docs.push(auction);
         }
     }
