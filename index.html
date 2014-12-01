@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8" />
     <title>Quibids</title>
@@ -14,87 +15,100 @@
     <script type="text/javascript" src="http://cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="http://cdn.jsdelivr.net/pouchdb/2.2.3/pouchdb.min.js"></script>
     <script type="text/javascript">
-        var docs = [];
-        var table;
-        var db = new PouchDB('QuibidsDB');
+    var DEBUB = true;
+    var docs = [];
+    var table;
+    var db = new PouchDB('QuibidsDB');
 
-        function clearDB() {
-            db.destroy(dump);
-            db = new PouchDB('QuibidsDB');
-        }
+    function clearDB() {
+        db.destroy(dump);
+        db = new PouchDB('QuibidsDB');
+    }
 
-        function parse() {
-            $body = $("#webpage").contents().find("body").first();
-            if ($body.find(".list.active").length != 0) {
-                $body.find(".auction-item-wrapper").each(scrape);
-                if(docs.length) {
-                    db.bulkDocs(docs, dump);
-                    docs = [];
-                }
-                setTimeout(refreshIframe, 180000);
+    function parse() {
+        $body = $("#webpage").contents().find("body").first();
+        if ($body.find(".list.active").length != 0) {
+            $body.find(".auction-item-wrapper").each(scrape);
+            if (docs.length) {
+                db.bulkDocs(docs, dump);
+                docs = [];
             }
+            setTimeout(refreshIframe, 180000);
         }
+    }
 
-        function refreshIframe() {
-            var iframe = document.getElementById("webpage");
-            iframe.src = iframe.src;
-        }
+    function refreshIframe() {
+        var iframe = document.getElementById("webpage");
+        iframe.src = iframe.src;
+    }
 
-        function scrape(index, element) {
-            $root = $(element).children().first();
-            var auction = {
-                _id: $root.attr("id"),
-                name: $root.find(".auction-item-title").first().text(),
-                price: parseFloat($root.find(".price").first().text().substring(1)),
-                value: parseFloat($root.find("#valueprice").text().substring(1)),
-                bidomatic: $root.find(".bidomatic-on").length != 0,
-                gameplay: $root.find(".gameplay-on").length != 0,
-                timestamp: Date.now()
-            };
-            // check that data isn't void
-            if(auction.name.length)
-                docs.push(auction);
-        }
-
-        function dump(err, response) {
-            if (err)
-                console.log(err);
-            else
-                console.log(response);
-        }
-
-        function queryCallback(err, results) {
-            if(err)
-                console.log(err);
-            else {
-                for(var i = 0; i < results.rows.length; i++) {
-                    var row = results.rows[i];
-                    table.row.add([row.key[0], row.key[1], row.value.sum / row.value.count, Math.sqrt(row.value.sumsqr / row.value.count), row.value.count]);
-                }
-                table.draw();
+    function scrape(index, element) {
+        $root = $(element).children().first();
+        var auction = {
+            _id: $root.attr("id"),
+            name: $root.find(".auction-item-title").first().text(),
+            price: parseFloat($root.find(".price").first().text().substring(1)),
+            value: parseFloat($root.find("#valueprice").text().substring(1)),
+            bidomatic: $root.find(".bidomatic-on").length != 0,
+            gameplay: $root.find(".gameplay-on").length != 0,
+            timestamp: Date.now()
+        };
+        // check that data isn't void
+        if (auction.name.length) {
+            if (DEBUG) {
+                console.log("Inserting");
+                console.log(auction);
             }
+            docs.push(auction);
         }
+    }
 
-        function map(doc) {
-            emit([doc.name, doc.value], doc.price);
+    function dump(err, response) {
+        if (err)
+            console.log(err);
+        else
+            console.log(response);
+    }
+
+    function queryCallback(err, results) {
+        if (err)
+            console.log(err);
+        else {
+            for (var i = 0; i < results.rows.length; i++) {
+                var row = results.rows[i];
+                table.row.add([row.key[0], row.key[1], row.value.sum / row.value.count, Math.sqrt(row.value.sumsqr / row.value.count), row.value.count]);
+            }
+            table.draw();
         }
+    }
 
-        $(document).ready(function () {
-            table = $("#table").DataTable({
-                "columns": [
-                    { "title": "Name" },
-                    { "title": "Value" },
-                    { "title": "Avg" },
-                    { "title": "&sigma;"},
-                    { "title": "Count" }
-                ]
-            });
-            db.query({map: map, reduce: "_stats"}, {
-                group: true
-            }, queryCallback);
+    function map(doc) {
+        emit([doc.name, doc.value], doc.price);
+    }
+
+    $(document).ready(function() {
+        table = $("#table").DataTable({
+            "columns": [{
+                "title": "Name"
+            }, {
+                "title": "Value"
+            }, {
+                "title": "Avg"
+            }, {
+                "title": "&sigma;"
+            }, {
+                "title": "Count"
+            }]
         });
+        db.query({
+            map: map,
+            reduce: "_stats"
+        }, {
+            group: true
+        }, queryCallback);
+    });
     </script>
-    
+
 </head>
 
 <body>
